@@ -34,7 +34,20 @@ public partial class App : Application
             // bord. ShutdownMode=OnExplicitShutdown (voir App.xaml) garde
             // le process en vie sans fenêtre.
             _watchdogCts = new CancellationTokenSource();
-            _ = WatchdogLoop.RunAsync(NotifyPlaceholder, _watchdogCts.Token);
+            // RunAsync rend la main quand une demande d'arrêt coopératif a
+            // été traitée (mise à jour) ou que le token est annulé. Sans ce
+            // Shutdown, ShutdownMode=OnExplicitShutdown laissait un process
+            // ÉLEVÉ fantôme en vie indéfiniment : il n'appliquait plus rien
+            // mais gardait les fichiers de l'app verrouillés, ce qui faisait
+            // échouer l'installateur de mise à jour.
+            _ = WatchdogLoop.RunAsync(NotifyPlaceholder, _watchdogCts.Token)
+                .ContinueWith(
+                    _ =>
+                    {
+                        if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
+                        Dispatcher.BeginInvoke(new Action(() => Shutdown()));
+                    },
+                    TaskScheduler.Default);
             return;
         }
 

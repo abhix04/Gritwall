@@ -16,6 +16,7 @@ public partial class FloatingFocusWindow : Wpf.Ui.Controls.FluentWindow
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly string _clockStyle;
     private string? _lastArtKey;
+    private bool _compact;
 
     public static void ShowOrActivate()
     {
@@ -36,7 +37,8 @@ public partial class FloatingFocusWindow : Wpf.Ui.Controls.FluentWindow
         // Sans ça, ouvrir/fermer la fenêtre flottante en boucle avec un MP4
         // de fond accumule des ressources natives jusqu'au passage du GC.
         Closed += (_, _) => { _timer.Stop(); BackgroundVideo.Stop(); BackgroundVideo.Close(); _instance = null; };
-        RefreshSession();
+        // Préférence mémorisée : on la restaure sans la réécrire.
+        SetCompact(Settings.Load().FloatingFocusCompact, persist: false);
         _ = RefreshSpotify();
     }
 
@@ -100,11 +102,25 @@ public partial class FloatingFocusWindow : Wpf.Ui.Controls.FluentWindow
             }
         }
 
+        var clock = seconds > 0 ? $"{(int)(seconds / 60):D2}:{(int)(seconds % 60):D2}" : "--:--";
+
+        if (_compact)
+        {
+            // Barre compacte : pas d'anneau à construire, pas de tâches, pas
+            // de pochette - juste l'information qu'on vient y chercher.
+            CompactTime.Text = clock;
+            CompactLabel.Text = title;
+            CompactDot.Fill = seconds > 0
+                ? new SolidColorBrush(Color.FromRgb(45, 165, 230))
+                : new SolidColorBrush(Color.FromArgb(110, 255, 255, 255));
+            return;
+        }
+
         var ringSize = Math.Clamp(Math.Min(ActualWidth - 90, ActualHeight - 160), 155, 285);
         RingHost.Children.Clear();
         RingHost.Children.Add(RingVisual.BuildFocusTimer(ringSize, seconds > 0 ? seconds / total : 0,
             new SolidColorBrush(Color.FromArgb(70, 255, 255, 255)), new SolidColorBrush(Color.FromRgb(45, 165, 230)),
-            seconds > 0 ? $"{(int)(seconds / 60):D2}:{(int)(seconds % 60):D2}" : "--:--", Brushes.White, _clockStyle));
+            clock, Brushes.White, _clockStyle));
         PhaseText.Text = title;
         ModeDetailText.Text = detail;
         RenderFloatingTasks();
@@ -162,6 +178,10 @@ public partial class FloatingFocusWindow : Wpf.Ui.Controls.FluentWindow
 
     private async Task RefreshSpotify()
     {
+        // La tuile Spotify vit dans la vue complète : en mode compact elle est
+        // masquée, inutile d'interroger les GSMTC et de décoder une pochette
+        // chaque seconde pour une zone que personne ne voit.
+        if (_compact) return;
         var info = await SpotifyControl.GetNowPlayingAsync();
         SpotifyTitle.Text = string.IsNullOrWhiteSpace(info.Title) ? Loc.T("nowplaying.none") : info.Title;
         SpotifyArtist.Text = info.Artist ?? "";
@@ -183,6 +203,54 @@ public partial class FloatingFocusWindow : Wpf.Ui.Controls.FluentWindow
         using var stream = new MemoryStream(info.Thumbnail);
         image.BeginInit(); image.CacheOption = BitmapCacheOption.OnLoad; image.StreamSource = stream; image.EndInit(); image.Freeze();
         SpotifyThumbnail.Source = image;
+    }
+
+    // ---- mode compact (issue #6) ----
+    // Dimensions de la barre : assez large pour "00:00" plus le nom de la
+    // tâche tronqué, assez basse pour se poser sur un bord d'écran sans
+    // mordre sur le travail.
+    private const double CompactW = 318, CompactH = 56;
+    private const double FullW = 500, FullH = 430;
+
+    private void Compact_Click(object sender, RoutedEventArgs e) => SetCompact(!_compact);
+
+    private void SetCompact(bool compact, bool persist = true)
+    {
+        _compact = compact;
+
+        // La taille mini doit être relâchée AVANT de rétrécir, sinon WPF
+        // refuse la nouvelle hauteur et la fenêtre reste grande.
+        MinWidth = 0;
+        MinHeight = 0;
+
+        FullRoot.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        CompactRoot.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
+        // Le fond (image ou vidéo) n'a pas de sens sur une barre de 56 px, et
+        // laisser la vidéo tourner derrière coûterait du CPU pour rien.
+        BackgroundImage.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        BackgroundVideo.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
+        if (compact) BackgroundVideo.Pause(); else if (BackgroundVideo.Source is not null) BackgroundVideo.Play();
+
+        ResizeMode = compact ? ResizeMode.NoResize : ResizeMode.CanResize;
+        Width = compact ? CompactW : FullW;
+        Height = compact ? CompactH : FullH;
+        MinWidth = compact ? CompactW : 390;
+        MinHeight = compact ? CompactH : 340;
+
+        if (persist)
+        {
+            try
+            {
+                var settings = Settings.Load();
+                settings.FloatingFocusCompact = compact;
+                Settings.Save(settings);
+            }
+            catch
+            {
+                // Perdre la préférence d'affichage ne doit pas empêcher la bascule.
+            }
+        }
+        RefreshSession();
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

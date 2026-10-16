@@ -106,8 +106,8 @@ before it runs a downloaded installer.
 | Protection | Application blocking, website blocking, reusable profiles, an always-on permanent blocklist independent of any session, and optional Hard mode |
 | Sounds | Twenty-two built-in ambient soundscapes with independent volume controls and three-sound mixing |
 | Media | Spotify and other Windows media titles, artists and artwork in the focus experience |
-| Floating timer | Draggable, resizable and always-on-top, with image or MP4 backgrounds and blur |
-| Statistics | Daily/weekly/monthly totals, streaks, longest session, activity heatmap, blocked attempts and top-played tracks |
+| Floating timer | Draggable, resizable and always-on-top, with image or MP4 backgrounds and blur, plus a compact bar mode for small screens |
+| Statistics | Day/week/month navigation across four views: overview with streak and activity heatmap, time per task, day by day charts, and records |
 | Appearance | Light and dark themes, custom backgrounds, blur and three background layouts |
 | Reminders | Manual or habit-based session suggestions without automatic session starts |
 | Updates | Automatic release checks, verified downloads, silent installation and restart |

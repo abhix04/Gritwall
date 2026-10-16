@@ -60,6 +60,9 @@ public partial class StatsPage : UserControl
         RenderSummary();
         RenderActivityHeatmap();
         RenderBlockedAttempts();
+        // Onglets + navigation de période : en dernier, parce que le rendu
+        // de l'onglet courant s'appuie sur les blocs ci-dessus.
+        InitializePeriods();
     }
 
     private void InitializeActivityFilters()

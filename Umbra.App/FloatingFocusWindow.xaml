@@ -15,11 +15,17 @@
             <Image x:Name="BackgroundImage" Stretch="UniformToFill" />
             <MediaElement x:Name="BackgroundVideo" LoadedBehavior="Manual" UnloadedBehavior="Manual" Stretch="UniformToFill" IsMuted="True" MediaEnded="BackgroundVideo_MediaEnded" />
             <Border Background="#7A101010" />
-            <Grid Margin="20">
+            <Grid x:Name="FullRoot" Margin="20">
                 <Grid.RowDefinitions><RowDefinition Height="46"/><RowDefinition Height="*"/><RowDefinition Height="34"/><RowDefinition Height="58"/></Grid.RowDefinitions>
                 <Grid Grid.Row="0">
-                    <TextBlock x:Name="PhaseText" HorizontalAlignment="Center" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Top" Margin="38,5" TextTrimming="CharacterEllipsis" />
-                    <Button shell:WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,3,0" Width="30" Height="30" Padding="5" Background="Transparent" BorderThickness="0" Foreground="White" Click="Close_Click"><ui:SymbolIcon Symbol="Dismiss24" FontSize="14" /></Button>
+                    <TextBlock x:Name="PhaseText" HorizontalAlignment="Center" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Top" Margin="68,5" TextTrimming="CharacterEllipsis" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,3,0">
+                        <Button shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="30" Height="30" Padding="5" Background="Transparent" BorderThickness="0" Foreground="White"
+                                Click="Compact_Click" ToolTip="Mode compact">
+                            <ui:SymbolIcon Symbol="ArrowMinimize24" FontSize="14" />
+                        </Button>
+                        <Button shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="30" Height="30" Padding="5" Background="Transparent" BorderThickness="0" Foreground="White" Click="Close_Click"><ui:SymbolIcon Symbol="Dismiss24" FontSize="14" /></Button>
+                    </StackPanel>
                 </Grid>
                 <Grid x:Name="RingHost" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 <!-- Optionnel (Réglages > Tâches de session) - juste les
@@ -36,6 +42,39 @@
                             <TextBlock x:Name="SpotifyArtist" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                     </StackPanel>
+                </Grid>
+            </Grid>
+
+            <!-- Mode compact (demande d'issue #6) : une barre fine et
+                 discrète pour les petits écrans, où la fenêtre de 500x430
+                 prend trop de place. Même fenêtre, même état, seule la
+                 disposition change. -->
+            <Grid x:Name="CompactRoot" Visibility="Collapsed" Background="#F01A1A1E">
+                <Grid Margin="15,0,6,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Ellipse x:Name="CompactDot" Grid.Column="0" Width="9" Height="9" Fill="#2DA5E6"
+                             VerticalAlignment="Center" Margin="0,0,11,0" />
+                    <TextBlock x:Name="CompactTime" Grid.Column="1" FontSize="22" FontWeight="SemiBold"
+                               Foreground="White" VerticalAlignment="Center" Text="--:--" />
+                    <TextBlock x:Name="CompactLabel" Grid.Column="2" FontSize="11" Opacity="0.66"
+                               Foreground="White" VerticalAlignment="Center" Margin="12,2,10,0"
+                               TextTrimming="CharacterEllipsis" />
+                    <Button x:Name="CompactExpandButton" Grid.Column="3" shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Width="30" Height="30" Padding="5" Background="Transparent" BorderThickness="0"
+                            Foreground="White" Click="Compact_Click" ToolTip="Agrandir">
+                        <ui:SymbolIcon Symbol="ArrowMaximize24" FontSize="13" />
+                    </Button>
+                    <Button Grid.Column="4" shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                            Width="30" Height="30" Padding="5" Background="Transparent" BorderThickness="0"
+                            Foreground="White" Click="Close_Click">
+                        <ui:SymbolIcon Symbol="Dismiss24" FontSize="13" />
+                    </Button>
                 </Grid>
             </Grid>
         </Grid>

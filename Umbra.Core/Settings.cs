@@ -25,6 +25,9 @@ public class AppSettings
     public string? FloatingFocusBackgroundPath { get; set; }
     public List<string> RecentFloatingFocusBackgrounds { get; set; } = new();
     public double FloatingFocusBlur { get; set; } = 12;
+    // Mode compact du timer flottant (issue #6) : sur un petit écran la
+    // fenêtre de 500x430 est trop envahissante, on la réduit à une barre.
+    public bool FloatingFocusCompact { get; set; }
     public bool ShowSessionTasks { get; set; } // désactivé par défaut, opt-in depuis Réglages
     // Volume par son d'ambiance (id -> 0..1), pour retrouver son mix après
     // un redémarrage - avant, chaque son repartait à 0.55 à chaque relance

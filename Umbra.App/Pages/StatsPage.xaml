@@ -16,78 +16,209 @@
             <Setter Property="FontWeight" Value="Bold" />
             <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
         </Style>
+
+        <!-- Étiquette discrète au-dessus de chaque carte. -->
+        <Style x:Key="CardCaptionStyle" TargetType="TextBlock">
+            <!-- Foreground obligatoire : ces titres vivent HORS des ui:Card,
+                 donc ils n'héritent d'aucune couleur du thème et retombaient
+                 sur le noir par défaut au premier lancement en thème sombre. -->
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Opacity" Value="0.55" />
+            <Setter Property="Margin" Value="2,0,0,6" />
+        </Style>
     </UserControl.Resources>
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="1100">
-            <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="270" />
-                    <ColumnDefinition Width="8" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
 
-                <ui:Card Grid.Column="0" VerticalAlignment="Stretch" VerticalContentAlignment="Center">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock x:Name="StreakNumberText" FontSize="48" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#F7A21B" />
-                        <TextBlock x:Name="StreakLabelText" FontSize="12" Opacity="0.6" HorizontalAlignment="Center" Margin="0,0,0,14" />
-                        <StackPanel x:Name="WeekdayRow" Orientation="Horizontal" HorizontalAlignment="Center" />
-                        <TextBlock x:Name="StreakRecordText" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" Margin="0,10,0,0" />
-                        <TextBlock x:Name="StreakDescText" FontSize="11" Opacity="0.5" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Titre + navigation de période -->
+        <Grid Grid.Row="0" MaxWidth="1100" HorizontalAlignment="Stretch" Margin="0,0,0,14">
+            <TextBlock x:Name="PageTitleText" FontSize="26" FontWeight="Bold" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="7" Padding="4,3" Margin="0,0,10,0">
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="PrevPeriodButton" Width="28" Height="26" Padding="0" Background="Transparent" BorderThickness="0"
+                                Cursor="Hand" Click="PrevPeriod_Click" ToolTip="Période précédente">
+                            <Path Data="M 6,1 L 1,5 L 6,9" Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="7" Height="9" Stretch="Uniform" Opacity="0.75" />
+                        </Button>
+                        <TextBlock x:Name="PeriodLabelText" MinWidth="128" TextAlignment="Center" VerticalAlignment="Center"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <Button x:Name="NextPeriodButton" Width="28" Height="26" Padding="0" Background="Transparent" BorderThickness="0"
+                                Cursor="Hand" Click="NextPeriod_Click" ToolTip="Période suivante">
+                            <Path Data="M 1,1 L 6,5 L 1,9" Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="7" Height="9" Stretch="Uniform" Opacity="0.75" />
+                        </Button>
                     </StackPanel>
-                </ui:Card>
+                </Border>
+                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="7" Padding="3">
+                    <StackPanel x:Name="GranularityPanel" Orientation="Horizontal" />
+                </Border>
+            </StackPanel>
+        </Grid>
 
-                <ui:Card Grid.Column="2" VerticalAlignment="Stretch" VerticalContentAlignment="Center">
-                    <UniformGrid x:Name="SummaryGrid" Columns="3" Rows="2" Margin="22,18" />
-                </ui:Card>
-            </Grid>
+        <!-- Onglets -->
+        <StackPanel x:Name="TabsPanel" Grid.Row="1" Orientation="Horizontal" MaxWidth="1100"
+                    HorizontalAlignment="Left" Margin="0,0,0,14" />
 
-            <ui:Card Margin="0,0,0,8">
-                <StackPanel Margin="18">
-                    <Button Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Stretch" Cursor="Hand" Click="MusicHeader_Click" Margin="0,0,0,14">
-                        <Grid>
-                            <StackPanel>
-                                <TextBlock x:Name="MusicHeaderText" FontWeight="Bold" FontSize="14" />
-                                <TextBlock x:Name="MusicTotalText" FontSize="11" Opacity="0.55" Margin="0,3,0,0" Visibility="Collapsed" />
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <Grid MaxWidth="1100">
+
+                <!-- ============ VUE D'ENSEMBLE ============ -->
+                <StackPanel x:Name="TabOverview">
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="270" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <ui:Card Grid.Column="0" VerticalAlignment="Stretch" VerticalContentAlignment="Center">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock x:Name="StreakNumberText" FontSize="48" FontWeight="Bold" HorizontalAlignment="Center" Foreground="#F7A21B" />
+                                <TextBlock x:Name="StreakLabelText" FontSize="12" Opacity="0.6" HorizontalAlignment="Center" Margin="0,0,0,14" />
+                                <StackPanel x:Name="WeekdayRow" Orientation="Horizontal" HorizontalAlignment="Center" />
+                                <TextBlock x:Name="StreakRecordText" FontSize="11" Opacity="0.6" HorizontalAlignment="Center" Margin="0,10,0,0" />
+                                <TextBlock x:Name="StreakDescText" FontSize="11" Opacity="0.5" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
                             </StackPanel>
-                            <Path x:Name="MusicExpandGlyph" Data="M 1,2 L 5,6 L 9,2" Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="1.5"
-                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="7" Stretch="Uniform"
-                                  HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0.65" RenderTransformOrigin="0.5,0.5">
-                                <Path.RenderTransform><RotateTransform Angle="0" /></Path.RenderTransform>
-                            </Path>
+                        </ui:Card>
+
+                        <ui:Card Grid.Column="2" VerticalAlignment="Stretch" VerticalContentAlignment="Center">
+                            <UniformGrid x:Name="SummaryGrid" Columns="3" Rows="2" Margin="22,18" />
+                        </ui:Card>
+                    </Grid>
+
+                    <TextBlock x:Name="PeriodStatsCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <UniformGrid x:Name="PeriodStatsGrid" Columns="4" Rows="1" Margin="22,18" />
+                    </ui:Card>
+
+                    <!-- Calendrier d'activité et musiques vivent ici : c'est
+                         la vue qu'on ouvre en premier, autant y mettre ce qui
+                         se lit d'un coup d'oeil. Les courbes jour par jour
+                         restent dans leur propre onglet. -->
+                    <TextBlock x:Name="HeatmapCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel Margin="18">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
+                                <ComboBox x:Name="ActivityYearBox" Width="100" Margin="0,0,8,0" SelectionChanged="ActivityFilter_SelectionChanged" />
+                                <ComboBox x:Name="ActivityMonthBox" Width="150" SelectionChanged="ActivityFilter_SelectionChanged" />
+                            </StackPanel>
+                            <Grid x:Name="ActivityHeatmapGrid" Height="126" HorizontalAlignment="Stretch" />
+                            <TextBlock x:Name="ActivityLegendText" FontSize="11" Opacity="0.55" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </ui:Card>
+
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel Margin="18">
+                            <Button Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Stretch" Cursor="Hand" Click="MusicHeader_Click" Margin="0,0,0,14">
+                                <Grid>
+                                    <StackPanel>
+                                        <TextBlock x:Name="MusicHeaderText" FontWeight="Bold" FontSize="14" />
+                                        <TextBlock x:Name="MusicTotalText" FontSize="11" Opacity="0.55" Margin="0,3,0,0" Visibility="Collapsed" />
+                                    </StackPanel>
+                                    <Path x:Name="MusicExpandGlyph" Data="M 1,2 L 5,6 L 9,2" Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="1.5"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="7" Stretch="Uniform"
+                                          HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0.65" RenderTransformOrigin="0.5,0.5">
+                                        <Path.RenderTransform><RotateTransform Angle="0" /></Path.RenderTransform>
+                                    </Path>
+                                </Grid>
+                            </Button>
+                            <StackPanel x:Name="MusicEmptyPanel" HorizontalAlignment="Center" Margin="0,20,0,20">
+                                <ui:SymbolIcon Symbol="Headphones24" FontSize="56" Opacity="0.35" HorizontalAlignment="Center" Margin="0,0,0,14" />
+                                <TextBlock x:Name="MusicEmptyText" Opacity="0.6" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="360" />
+                            </StackPanel>
+                            <ItemsControl x:Name="MusicList">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="5" Rows="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                            <ItemsControl x:Name="AllMusicList" Visibility="Collapsed" Opacity="0">
+                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ui:Card>
+                </StackPanel>
+
+                <!-- ============ TEMPS PASSÉ ============ -->
+                <StackPanel x:Name="TabTimeSpent" Visibility="Collapsed">
+                    <TextBlock x:Name="QuestCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <Grid Margin="18">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="22" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid x:Name="QuestDonutHost" Grid.Column="0" Width="168" Height="168" VerticalAlignment="Top" />
+                            <StackPanel x:Name="QuestLegendPanel" Grid.Column="2" VerticalAlignment="Center" />
                         </Grid>
-                    </Button>
-                    <StackPanel x:Name="MusicEmptyPanel" HorizontalAlignment="Center" Margin="0,20,0,20">
-                        <ui:SymbolIcon Symbol="Headphones24" FontSize="56" Opacity="0.35" HorizontalAlignment="Center" Margin="0,0,0,14" />
-                        <TextBlock x:Name="MusicEmptyText" Opacity="0.6" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="360" />
-                    </StackPanel>
-                    <ItemsControl x:Name="MusicList">
-                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="5" Rows="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                    <ItemsControl x:Name="AllMusicList" Visibility="Collapsed" Opacity="0">
-                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                    </ItemsControl>
-                </StackPanel>
-            </ui:Card>
+                    </ui:Card>
 
-            <ui:Card Margin="0,0,0,8">
-                <StackPanel Margin="18">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
-                        <ComboBox x:Name="ActivityYearBox" Width="100" Margin="0,0,8,0" SelectionChanged="ActivityFilter_SelectionChanged" />
-                        <ComboBox x:Name="ActivityMonthBox" Width="150" SelectionChanged="ActivityFilter_SelectionChanged" />
-                    </StackPanel>
-                    <Grid x:Name="ActivityHeatmapGrid" Height="126" HorizontalAlignment="Stretch" />
-                    <TextBlock x:Name="ActivityLegendText" FontSize="11" Opacity="0.55" Margin="0,10,0,0" />
-                </StackPanel>
-            </ui:Card>
+                    <TextBlock x:Name="KindCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel x:Name="KindPanel" Margin="18" />
+                    </ui:Card>
 
-            <TextBlock x:Name="BlockedHeaderText" Style="{StaticResource SectionHeaderStyle}" Margin="0,0,0,8" />
-            <ui:Card Margin="0,0,0,8">
-                <StackPanel Margin="18">
-                    <TextBlock x:Name="BlockedSummaryText" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,10" />
-                    <ItemsControl x:Name="BlockedAttemptsList" />
-                </StackPanel>
-            </ui:Card>
+                    <TextBlock x:Name="TimeOfDayCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel x:Name="TimeOfDayPanel" Margin="18" />
+                    </ui:Card>
 
-        </StackPanel>
-    </ScrollViewer>
+                    <TextBlock x:Name="BlockedHeaderText" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel Margin="18">
+                            <TextBlock x:Name="BlockedSummaryText" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <ItemsControl x:Name="BlockedAttemptsList" />
+                        </StackPanel>
+                    </ui:Card>
+                </StackPanel>
+
+                <!-- ============ JOUR PAR JOUR ============ -->
+                <StackPanel x:Name="TabDayByDay" Visibility="Collapsed">
+                    <TextBlock x:Name="FocusPerDayCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel Margin="18">
+                            <Grid x:Name="FocusPerDayChart" Height="178" HorizontalAlignment="Stretch" />
+                            <TextBlock x:Name="FocusPerDayEmptyText" Opacity="0.55" FontSize="12" TextAlignment="Center"
+                                       Margin="0,16,0,16" Visibility="Collapsed" />
+                        </StackPanel>
+                    </ui:Card>
+
+                    <TextBlock x:Name="SessionsPerDayCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel Margin="18">
+                            <Grid x:Name="SessionsPerDayChart" Height="150" HorizontalAlignment="Stretch" />
+                        </StackPanel>
+                    </ui:Card>
+
+                </StackPanel>
+
+                <!-- ============ RECORDS ============ -->
+                <StackPanel x:Name="TabRecords" Visibility="Collapsed">
+                    <TextBlock x:Name="BestEffortsCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <UniformGrid x:Name="BestEffortsGrid" Columns="3" Rows="1" Margin="22,18" />
+                    </ui:Card>
+
+                    <TextBlock x:Name="SessionListCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <ui:Card Margin="0,0,0,8">
+                        <StackPanel Margin="18">
+                            <ItemsControl x:Name="SessionList" />
+                            <TextBlock x:Name="SessionListEmptyText" Opacity="0.55" FontSize="12" TextAlignment="Center"
+                                       Margin="0,16,0,16" Visibility="Collapsed" />
+                        </StackPanel>
+                    </ui:Card>
+
+                </StackPanel>
+
+            </Grid>
+        </ScrollViewer>
+    </Grid>
 </UserControl>
