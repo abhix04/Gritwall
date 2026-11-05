@@ -5,7 +5,7 @@ namespace Umbra.Tests;
 public class PeriodsTests
 {
     private static string TodayKey(DateTime d) => Periods.TodayKey(d);
-    private static string Hhmm(DateTime d) => d.ToString("HH:mm");
+    private static string Hhmm(DateTime d) => d.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
 
     private static Period MakePeriod(bool enabled, bool recurring, List<int>? days = null, string? date = null, string startTime = "00:00", string endTime = "00:00", string? pausedDate = null) => new()
     {
