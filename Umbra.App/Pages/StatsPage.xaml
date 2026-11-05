@@ -191,10 +191,42 @@
                         </StackPanel>
                     </ui:Card>
 
-                    <TextBlock x:Name="SessionsPerDayCaption" Style="{StaticResource CardCaptionStyle}" />
+                    <!-- 24-Hour Hourly Activity Timeline Visualizer (WP 3.1) -->
+                    <TextBlock x:Name="TimelineCaption" Style="{StaticResource CardCaptionStyle}" />
                     <ui:Card Margin="0,0,0,8">
                         <StackPanel Margin="18">
-                            <Grid x:Name="SessionsPerDayChart" Height="150" HorizontalAlignment="Stretch" />
+                            <Grid Margin="0,0,0,12">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock x:Name="TimelineTitleText" FontSize="14" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                    <TextBlock x:Name="TimelineTotalText" FontSize="11" Opacity="0.55"
+                                               Margin="10,2,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <Border Width="8" Height="8" CornerRadius="2" Background="#4CAF50" Margin="0,0,4,0" />
+                                    <TextBlock Text="Productive" FontSize="11" Opacity="0.7" Margin="0,0,12,0" VerticalAlignment="Center" />
+                                    <Border Width="8" Height="8" CornerRadius="2" Background="#F7A21B" Margin="0,0,4,0" />
+                                    <TextBlock Text="Social" FontSize="11" Opacity="0.7" Margin="0,0,12,0" VerticalAlignment="Center" />
+                                    <Border Width="8" Height="8" CornerRadius="2" Background="#B98BE0" Margin="0,0,4,0" />
+                                    <TextBlock Text="Games" FontSize="11" Opacity="0.7" Margin="0,0,12,0" VerticalAlignment="Center" />
+                                    <Border Width="8" Height="8" CornerRadius="2" Background="#7E8B99" Margin="0,0,4,0" />
+                                    <TextBlock Text="Unclassified" FontSize="11" Opacity="0.7" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Timeline Track Host -->
+                            <Grid x:Name="TimelineHost" Height="42" HorizontalAlignment="Stretch" Margin="0,4,0,0">
+                                <Border Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="6"
+                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="1" />
+                                <Canvas x:Name="TimelineCanvas" ClipToBounds="True" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+                            </Grid>
+
+                            <!-- Timeline Hour Ruler -->
+                            <Grid x:Name="TimelineRuler" Height="16" Margin="0,6,0,0" HorizontalAlignment="Stretch" />
+
+                            <!-- Empty State -->
+                            <TextBlock x:Name="TimelineEmptyText" Opacity="0.55" FontSize="12" TextAlignment="Center"
+                                       Margin="0,16,0,8" Visibility="Collapsed" />
                         </StackPanel>
                     </ui:Card>
 

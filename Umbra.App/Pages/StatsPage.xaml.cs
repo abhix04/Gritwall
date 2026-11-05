@@ -31,8 +31,17 @@ public partial class StatsPage : UserControl
     // reste visuellement de la même famille de couleur.
     private static readonly Color StreakColor = Color.FromRgb(0xF7, 0xA2, 0x1B);
 
-    public StatsPage()
+    private Umbra.Core.Tracking.IActivityDatabase? _activityDatabase;
+
+    public Umbra.Core.Tracking.IActivityDatabase ActivityDatabase
     {
+        get => _activityDatabase ??= new Umbra.Core.Tracking.ActivityDatabase($"Data Source={Config.ActivityDatabaseFile};");
+        set => _activityDatabase = value;
+    }
+
+    public StatsPage(Umbra.Core.Tracking.IActivityDatabase? database = null)
+    {
+        _activityDatabase = database;
         InitializeComponent();
 
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };

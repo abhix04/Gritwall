@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Umbra.Core;
+using Umbra.Core.Tracking;
 using TextBlock = System.Windows.Controls.TextBlock;
 using Button = System.Windows.Controls.Button;
 
@@ -40,7 +41,10 @@ public partial class StatsPage
         QuestCaption.Text = Loc.T("stats.quests");
         KindCaption.Text = Loc.T("stats.kinds");
         TimeOfDayCaption.Text = Loc.T("stats.timeofday");
-        SessionsPerDayCaption.Text = Loc.T("stats.chart.sessions");
+        TimelineCaption.Text = Loc.Language == "fr" ? "CHRONOLOGIE D'ACTIVITÉ (24H)" : "ACTIVITY TIMELINE (24H)";
+        TimelineTitleText.Text = Loc.Language == "fr" ? "Activité des applications" : "Application Activity";
+        TimelineHost.SizeChanged -= TimelineHost_SizeChanged;
+        TimelineHost.SizeChanged += TimelineHost_SizeChanged;
         HeatmapCaption.Text = Loc.T("stats.activity");
         BestEffortsCaption.Text = Loc.T("stats.best");
         SessionListCaption.Text = Loc.T("stats.sessions");
@@ -293,7 +297,7 @@ public partial class StatsPage
         FocusPerDayEmptyText.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
         FocusPerDayChart.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
 
-        DrawLineChart(SessionsPerDayChart, SessionPoints(period), v => v.ToString());
+        _ = RenderTimelineAsync(period.From.Date);
     }
 
     private void RenderRecords(StatsPeriod period)
@@ -700,5 +704,192 @@ public partial class StatsPage
 
             host.Children.Add(line);
         }
+    }
+
+    private bool _databaseInitialized;
+
+    private async Task RenderTimelineAsync(DateTime selectedDate)
+    {
+        try
+        {
+            if (!_databaseInitialized)
+            {
+                await ActivityDatabase.InitializeAsync().ConfigureAwait(true);
+                _databaseInitialized = true;
+            }
+
+            var tz = TimeZoneInfo.Local;
+            ActivityTimelineCalculator.GetDayBoundaries(selectedDate, tz, out var dayStartUtc, out var dayEndUtc);
+
+            var intervals = await ActivityDatabase.GetIntervalsAsync(
+                dayStartUtc,
+                dayEndUtc).ConfigureAwait(true);
+
+            var result = ActivityTimelineCalculator.CalculateDayTimeline(selectedDate, intervals, tz);
+            TimelineHost.Tag = result;
+            RedrawTimeline();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceWarning($"[StatsPage] Error rendering activity timeline: {ex.Message}");
+        }
+    }
+
+    private void TimelineHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        RedrawTimeline();
+    }
+
+    private void RedrawTimeline()
+    {
+        TimelineCanvas.Children.Clear();
+        TimelineRuler.Children.Clear();
+        TimelineRuler.ColumnDefinitions.Clear();
+
+        if (TimelineHost.Tag is not TimelineDayResult result)
+        {
+            return;
+        }
+
+        var w = TimelineHost.ActualWidth;
+        var h = TimelineHost.ActualHeight;
+
+        // Draw Hour Ruler from timezone-aware RulerTicks
+        if (result.RulerTicks is { Count: > 0 } ticks && w >= 40)
+        {
+            var rulerCanvas = new Canvas
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                VerticalAlignment = VerticalAlignment.Stretch,
+                Height = 16
+            };
+            TimelineRuler.Children.Add(rulerCanvas);
+
+            // Major display ticks: start, end, every 3 hours, and repeated hours
+            var displayTicks = ticks.Where(t =>
+                t.Fraction <= 0.001 ||
+                t.Fraction >= 0.999 ||
+                t.TimeLocal.Hour % 3 == 0 ||
+                ticks.Count(other => other.TimeLocal.Hour == t.TimeLocal.Hour) > 1
+            ).ToList();
+
+            foreach (var tick in displayTicks)
+            {
+                var hourText = new TextBlock
+                {
+                    Text = tick.Label,
+                    FontSize = 10,
+                    Opacity = 0.5,
+                };
+
+                hourText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                var textW = hourText.DesiredSize.Width > 0 ? hourText.DesiredSize.Width : 28.0;
+
+                double left;
+                if (tick.Fraction <= 0.001)
+                {
+                    left = 0;
+                }
+                else if (tick.Fraction >= 0.999)
+                {
+                    left = Math.Max(0, w - textW);
+                }
+                else
+                {
+                    left = Math.Max(0, Math.Min(w - textW, tick.Fraction * w - textW / 2.0));
+                }
+
+                Canvas.SetLeft(hourText, left);
+                Canvas.SetTop(hourText, 0);
+                rulerCanvas.Children.Add(hourText);
+            }
+        }
+
+        if (result.Blocks.Count == 0)
+        {
+            TimelineEmptyText.Visibility = Visibility.Visible;
+            TimelineEmptyText.Text = Loc.Language == "fr"
+                ? $"Aucune activité enregistrée pour le {result.Date:dd/MM/yyyy}."
+                : $"No activity recorded for {result.Date:yyyy-MM-dd}.";
+            TimelineTotalText.Text = "";
+            return;
+        }
+
+        TimelineEmptyText.Visibility = Visibility.Collapsed;
+        TimelineTotalText.Text = Loc.Language == "fr"
+            ? $"Total : {result.FormattedTotalActive}"
+            : $"Total: {result.FormattedTotalActive}";
+
+        if (w < 40 || h < 20) return;
+
+        foreach (var block in result.Blocks)
+        {
+            var left = block.StartFraction * w;
+            var blockWidth = (block.EndFraction - block.StartFraction) * w;
+            if (blockWidth < 2.0) blockWidth = 2.0;
+            if (left + blockWidth > w) blockWidth = Math.Max(1.0, w - left);
+
+            var color = (Color)ColorConverter.ConvertFromString(block.ColorHex);
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+
+            var rect = new Border
+            {
+                Width = blockWidth,
+                Height = Math.Max(10, h - 8),
+                Background = brush,
+                CornerRadius = new CornerRadius(2),
+                Margin = new Thickness(0, 4, 0, 4),
+                ToolTip = CreateBlockTooltip(block),
+                Cursor = System.Windows.Input.Cursors.Hand,
+            };
+
+            Canvas.SetLeft(rect, left);
+            Canvas.SetTop(rect, 0);
+            TimelineCanvas.Children.Add(rect);
+        }
+    }
+
+    private static ToolTip CreateBlockTooltip(TimelineBlock block)
+    {
+        var panel = new StackPanel { Margin = new Thickness(4) };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = block.ProcessName,
+            FontWeight = FontWeights.Bold,
+            FontSize = 13,
+            Margin = new Thickness(0, 0, 0, 4)
+        });
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"Category: {block.Category}",
+            FontSize = 11,
+            Opacity = 0.75,
+            Margin = new Thickness(0, 0, 0, 2)
+        });
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"Active Duration: {block.FormattedDuration}",
+            FontSize = 11,
+            Opacity = 0.75,
+            Margin = new Thickness(0, 0, 0, 2)
+        });
+
+        bool isAmbiguous = block.StartTimeLocal.Offset != block.EndTimeLocal.Offset;
+        string rangeText = isAmbiguous
+            ? $"{block.StartTimeLocal:HH:mm:ss (zzz)} - {block.EndTimeLocal:HH:mm:ss (zzz)}"
+            : $"{block.StartTimeLocal:HH:mm:ss} - {block.EndTimeLocal:HH:mm:ss}";
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = rangeText,
+            FontSize = 11,
+            Opacity = 0.6
+        });
+
+        return new ToolTip { Content = panel };
     }
 }
