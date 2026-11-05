@@ -13,6 +13,7 @@
     <!-- Contrôle du volume par application (session WASAPI de Spotify.exe) -
          GSMTC n'expose pas de volume, seul le mixeur audio Windows (Core
          Audio API) le permet. NAudio.Wasapi encapsule cette API COM. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
   </ItemGroup>
 
